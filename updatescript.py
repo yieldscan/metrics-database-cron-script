@@ -151,6 +151,71 @@ def update_last_updated(current_time):
 	id_last_update = newdb.lastUpdated.find()[0]["_id"]
 	result = newdb.lastUpdated.update_one({"_id": id_last_update}, {"$set": {"lastUpdated": current_time}})
 
+def update_nominations_updated_data(lastUpdated):
+	ogpolkadottransactiondatas = ogdb.polkadottransactiondatas.find({"createdAt": {"$gt": lastUpdated}})
+	for tx in ogpolkadottransactiondatas:
+
+		if tx["successful"] == True:
+			stake = tx["stake"]
+			alreadyBonded = tx["alreadyBonded"]
+			txdict=tx
+
+			
+			if stake == alreadyBonded:
+				txdict["volume"] = stake
+				if newdb.polkadotnominationsupadteddata.find_one({"_id": txdict["_id"]}) is None:
+					result=newdb.polkadotnominationsupadteddata.insert_one(txdict)
+
+			elif stake > alreadyBonded:
+				txdict["volume"] = stake-alreadyBonded
+				if newdb.polkadotamountstakeddata.find_one({"_id": txdict["_id"]}) is None:
+					result=newdb.polkadotamountstakeddata.insert_one(txdict)
+
+			if stake > alreadyBonded or stake < alreadyBonded:
+				if newdb.polkadotAUMdata.find_one({"stashId": txdict["stashId"]}) is None:
+					txdict["volume"] = stake
+				else:
+					txdict["volume"] = stake-alreadyBonded
+				if newdb.polkadotAUMdata.find_one({"_id": txdict["_id"]}) is None:
+					result = newdb.polkadotAUMdata.insert_one(txdict)
+
+			elif stake == alreadyBonded:
+				if newdb.polkadotAUMdata.find_one({"stashId": tx["stashId"]}) is None:
+					txdict["volume"] = stake
+					if newdb.polkadotAUMdata.find_one({"_id": txdict["_id"]}) is None:
+						result = newdb.polkadotAUMdata.insert_one(txdict)
+
+	ogkusamatransactiondatas = ogdb.kusamatransactiondatas.find({"createdAt": {"$gt": lastUpdated}})
+	for tx in ogkusamatransactiondatas:
+
+		if tx["successful"] == True:
+			stake = tx["stake"]
+			alreadyBonded = tx["alreadyBonded"]
+			txdict=tx
+
+			if stake == alreadyBonded:
+				txdict["volume"] = stake
+				if newdb.kusamanominationsupadteddata.find_one({"_id": txdict["_id"]}) is None:
+					result=newdb.kusamanominationsupadteddata.insert_one(txdict)
+
+			elif stake > alreadyBonded:
+				txdict["volume"] = stake-alreadyBonded
+				if newdb.kusamanominationsupadteddata.find_one({"_id": txdict["_id"]}) is None:
+					result=newdb.kusamanominationsupadteddata.insert_one(txdict)
+
+			if stake > alreadyBonded or stake < alreadyBonded:
+				if newdb.kusamaAUMdata.find_one({"stashId": tx["stashId"]}) is None:
+					txdict["volume"] = stake
+				else:
+					txdict["volume"] = stake-alreadyBonded
+				if newdb.kusamaAUMdata.find_one({"_id": txdict["_id"]}) is None:
+					result = newdb.kusamaAUMdata.insert_one(txdict)
+
+			elif stake == alreadyBonded:
+				if newdb.kusamaAUMdata.find_one({"stashId": tx["stashId"]}) is None:
+					txdict["volume"] = stake
+					if newdb.kusamaAUMdata.find_one({"_id": txdict["_id"]}) is None:
+						result = newdb.kusamaAUMdata.insert_one(txdict)
 
 
 #driver code
@@ -159,11 +224,18 @@ lastUpdated = newdb.lastUpdated.find()[0]["lastUpdated"]
 current_time = datetime.now()
 
 update_coin_prices(lastUpdated, current_time)
-print("Step 1/4: update_coin_prices completed!")
+print("Step 1/5: update_coin_prices completed!")
+
 update_transaction_data(lastUpdated)
-print("Step 2/4: update_transaction_data completed!")
+print("Step 2/5: update_transaction_data completed!")
+
 update_stats(current_time)
-print("Step 3/4: update_stats completed!")
+print("Step 3/5: update_stats completed!")
+
 update_last_updated(current_time)
-print("Step 4/4: update_last_updated completed!")
+print("Step 4/5: update_last_updated completed!")
+
+update_nominations_updated_data(lastUpdated)
+print("Step 5/5: update_nominations_updated_data completed!")
+
 print("\nScript completed at " + str(datetime.now()))
